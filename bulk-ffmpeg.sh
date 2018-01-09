@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# example usage:
+# FILTER=".*(Red|Orange|Yellow).*" \
+# ./bulk-ffmpeg.sh copy-without-audio ./target-dir ./2017/2017-09-21/*.MOV
+
 file.fullPath() {
   [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
 }
@@ -18,7 +22,8 @@ file.addTags() {
 
 file.getTimestamp() {
   local file="$1"
-  stat -f "%Sm" -t "%Y%m%d%H%M.%S" "$file"
+  local format="${2:-%Y%m%d%H%M.%S}"
+  stat -f "%Sm" -t "$format" "$file"
 }
 
 file.copyTimestamp() {
@@ -65,9 +70,14 @@ bulk.rotateVideos() {
 
 bulk.copyWithoutAudio() {
   local TARGETDIR=$(file.fullPath "$1")
+  mkdir -p "$TARGETDIR"
   shift
   for VIDEO in "$@"
   do
+    if [[ ! -f "$VIDEO" ]]
+    then
+      break
+    fi
     local VIDEO=$(file.fullPath "$VIDEO")
     local BASENAME=$(basename $VIDEO)
 
@@ -82,17 +92,22 @@ bulk.copyWithoutAudio() {
     RATING="${TAGS/*Purple*/}"
     RATING="${TAGS/*Green*/🤡}"
 
-    local TIMESTAMP=$(file.getTimestamp "$VIDEO")
-    local OUTPUT="${TARGETDIR}/${TIMESTAMP}-${RATING}-${FILENAME}.${EXTENSION}"
+    local TIMESTAMP=$(file.getTimestamp "$VIDEO" "%Y-%m-%d-%H.%M")
+    local OUTPUT="${TARGETDIR}/${TIMESTAMP}-${FILENAME}${RATING}.${EXTENSION,,}"
 
-    if [[ -z "$DRY_RUN" ]]
+    if [[ "$TAGS" =~ ${FILTER-.*} ]]
     then
-      video.copyWithoutAudio "$VIDEO" "$OUTPUT"
-      file.copyTimestamp "$VIDEO" "$OUTPUT"
-      file.addTags "$OUTPUT" "$(file.getTags "$VIDEO")"
-    else
-      echo "Would copy from: ${VIDEO}"
-      echo "             as: ${OUTPUT}"
+      if [[ -z "$DRY_RUN" ]]
+      then
+        video.copyWithoutAudio "$VIDEO" "$OUTPUT"
+        file.copyTimestamp "$VIDEO" "$OUTPUT"
+        file.addTags "$OUTPUT" "$(file.getTags "$VIDEO")"
+      else
+        echo "Would copy from: ${VIDEO}"
+        echo "             as: ${OUTPUT}"
+        echo "         rating: ${RATING}"
+        echo "           tags: ${TAGS}"
+      fi
     fi
   done
 }
