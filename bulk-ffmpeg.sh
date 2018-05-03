@@ -76,10 +76,11 @@ bulk.copyWithoutAudio() {
   do
     if [[ ! -f "$VIDEO" ]]
     then
+      echo "No such file: $VIDEO"
       break
     fi
     local VIDEO=$(file.fullPath "$VIDEO")
-    local BASENAME=$(basename $VIDEO)
+    local BASENAME=$(basename "$VIDEO")
 
     local EXTENSION="${BASENAME##*.}"
     local FILENAME="${BASENAME%%.*}"
@@ -87,10 +88,10 @@ bulk.copyWithoutAudio() {
     local TAGS=$(file.getTags "$VIDEO")
     local RATING
     RATING="${TAGS/*Red*/⭐️⭐️⭐️}"
-    RATING="${TAGS/*Orange*/⭐️⭐️}"
-    RATING="${TAGS/*Yellow*/⭐️}"
-    RATING="${TAGS/*Purple*/}"
-    RATING="${TAGS/*Green*/🤡}"
+    RATING="${RATING/*Orange*/⭐️⭐️}"
+    RATING="${RATING/*Yellow*/⭐️}"
+    RATING="${RATING/*Purple*/}"
+    RATING="${RATING/*Green*/🤡}"
 
     local TIMESTAMP=$(file.getTimestamp "$VIDEO" "%Y-%m-%d-%H.%M")
     local OUTPUT="${TARGETDIR}/${TIMESTAMP}-${FILENAME}${RATING}.${EXTENSION,,}"
